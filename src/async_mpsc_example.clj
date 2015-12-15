@@ -36,6 +36,7 @@
      (let [when-done (promise)]
        (>!! channel {:when-done when-done
                      :value p})
+       ; Obviously, this 'deref' would specify a timeout in real code.
        (let [result (deref when-done)]
          (println "Result for" p "is" result))))))
 
