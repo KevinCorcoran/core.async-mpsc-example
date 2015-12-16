@@ -1,5 +1,5 @@
 (ns async-mpsc-example
-  (:require [clojure.core.async :as async :refer [>! >!! <!!]]
+  (:require [clojure.core.async :as async :refer [<! >!! <!!]]
             [hack :refer [println]]))
 
 (def default-num-producers 10)
@@ -7,7 +7,7 @@
 (defn consume!
   [channel num-values]
   (async/go-loop [counter 1]
-    (let [{:keys [value when-done]} (<!! channel)]
+    (let [{:keys [value when-done]} (<! channel)]
       (println "consuming" value "...")
 
       ; This just simulates a "background job" which takes a while to execute;
