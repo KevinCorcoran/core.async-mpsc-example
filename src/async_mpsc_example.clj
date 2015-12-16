@@ -6,23 +6,20 @@
 
 (defn consume!
   [channel num-values]
-  ; Using 'future' instead of 'thread' because 'thread' returns a channel
-  ; with the value of body, and we don't need this.
-  (future
-   (loop [counter 1]
-     (let [{:keys [value when-done]} (<!! channel)]
-       (println "consuming" value "...")
+  (async/go-loop [counter 1]
+    (let [{:keys [value when-done]} (<!! channel)]
+      (println "consuming" value "...")
 
-       ; This just simulates a "background job" which takes a while to execute;
-       ; would not be required in real code.
-       (Thread/sleep 1000)
+      ; This just simulates a "background job" which takes a while to execute;
+      ; would not be required in real code.
+      (Thread/sleep 1000)
 
-       (deliver when-done (* 2 value))
-       (if (= counter num-values)
-         (do
-           (async/close! channel)
-           (println "DONE FOR REAL"))
-         (recur (inc counter)))))))
+      (deliver when-done (* 2 value))
+      (if (= counter num-values)
+        (do
+          (async/close! channel)
+          (println "DONE FOR REAL"))
+        (recur (inc counter))))))
 
 (defn produce!
   [channel num-producers]
@@ -45,8 +42,12 @@
    (main default-num-producers))
   ([num-producers]
    (let [channel (async/chan)]  ; imagine this would be stored in the TK service context
-     (consume! channel num-producers)
-     (produce! channel num-producers))))
+     (let [consumer-channel (consume! channel num-producers)]
+       (produce! channel num-producers)
+       (println "waiting for consumer channel to complete ...")
+       (println "got" (<!! consumer-channel) "from consumer channel")
+       (async/close! consumer-channel)
+       (println "SO SO DONE")))))
 
 ; TODO:
 ;  * use a buffer and do something based on contents before put (e.g. 503 if too full)
